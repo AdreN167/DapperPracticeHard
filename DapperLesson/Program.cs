@@ -1,6 +1,5 @@
 ﻿using DapperLesson.Data;
 using DapperLesson.Models;
-using DapperLesson.Services;
 using System;
 using System.Linq;
 
@@ -10,28 +9,67 @@ namespace DapperLesson
     {
         static void Main(string[] args)
         {
-            ConfigurationService.Init();
+            var firstTeam = new Team 
+            { 
+                Name = "Реал мадрид" 
+            };
 
-            using (var playerDataAccess = new PlayerDataAccess())
+            var secondTeam = new Team 
+            { 
+                Name = "Барсилона"
+            };
+
+            var firstPlayer = new Player
             {
-                foreach (var player in playerDataAccess.Select())
+                FullName = "Месси",
+                Number = 5,
+                TeamId = secondTeam.Id
+            };
+            
+            var secondPlayer = new Player
+            {
+                FullName = "Роналду",
+                Number = 17,
+                TeamId = firstTeam.Id
+            };
+
+            using (var context = new SportContext())
+            {
+                context.Add(firstTeam);
+                context.Add(secondTeam);
+
+                context.Add(firstPlayer);
+                context.Add(secondPlayer);
+
+                foreach (var team in context.Teams)
                 {
-                    Console.WriteLine($"[{player.Number}]{player.FullName}");
+                    Console.WriteLine($"\nКоманда {team.Name}");
+                    Console.WriteLine("Игроки:");
+
+                    foreach (var player in context.Players.Where(player => player.TeamId == team.Id).ToList())
+                    {
+                        Console.WriteLine($"[{player.Number}] {player.FullName}");
+                    }
                 }
 
-                var teamDataAccess = new TeamDataAccess();
+                var result = context.Players.First();
 
-                var result = teamDataAccess.Select();
+                var teamIdForRemove = result.TeamId;
 
-                playerDataAccess.Insert(new Player { FullName = "Петя", Number = 5, TeamId = result.First().Id });
+                result.TeamId = context.Teams.Where(team => team.Id != result.TeamId).First().Id;
 
-                teamDataAccess.Dispose();
+                context.Update(result);
+                context.Remove(context.Teams.Where(team => team.Id == teamIdForRemove).First());
 
-                Console.WriteLine();
-
-                foreach (var player in playerDataAccess.Select())
+                foreach (var team in context.Teams)
                 {
-                    Console.WriteLine($"[{player.Number}]{player.FullName}");
+                    Console.WriteLine($"\nКоманда {team.Name}");
+                    Console.WriteLine("Игроки:");
+
+                    foreach (var player in context.Players.Where(player => player.TeamId == team.Id).ToList())
+                    {
+                        Console.WriteLine($"[{player.Number}] {player.FullName}");
+                    }
                 }
             }
         }
